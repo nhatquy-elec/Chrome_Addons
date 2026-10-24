@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto Clicker Extension",
-  "version": "15.1",
+  "version": "3.1",
   "description": "Tu dong dien gia tri, chon toa do chuot va click.",
   "permissions": ["scripting", "tabs", "activeTab", "storage"],
   "action": {

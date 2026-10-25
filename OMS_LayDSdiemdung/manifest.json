@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "OMS_diemdung",
+  "version": "1.0",
+  "description": "OMS_diemdung",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["https://oms2.cpc.vn/*"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

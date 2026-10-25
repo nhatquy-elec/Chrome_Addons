@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Quick Extract",
+  "version": "1.0",
+  "action": {},
+  "permissions": ["activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

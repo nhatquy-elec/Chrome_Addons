@@ -29,13 +29,11 @@ function mainScript(idList) {
     let allData = [];
 
     const scrapeTableData = (nodeId) => {
-        let table = document.querySelector('div#listTramPP table');
+        const table = document.querySelector('div#listTramPP table');
         if (!table) return;
 
         const rows = table.querySelectorAll('tbody tr');
-        if (rows.length === 1 && (rows[0].innerText.includes("Chưa có") || rows[0].innerText.includes("đang tải"))) {
-            return;
-        }
+        if (rows.length === 1 && (rows[0].innerText.includes("Chưa có") || rows[0].innerText.includes("tải"))) return;
 
         if (allData.length === 0) {
             const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
@@ -49,57 +47,43 @@ function mainScript(idList) {
     };
 
     const processNode = async (nodeId) => {
-        console.log(`Đang xử lý ID: ${nodeId}`);
+        if (typeof window.downstream_get_trampp !== 'function') return;
         
-        // Ghi đè nội dung hiển thị để dễ theo dõi
-        const tbody = document.querySelector('div#listTramPP table tbody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10">Đang tải...</td></tr>';
+        window.downstream_get_trampp(nodeId);
 
-        if (typeof window.downstream_get_trampp === 'function') {
-            window.downstream_get_trampp(nodeId);
+        await new Promise(resolve => {
+            const start = Date.now();
+            const check = setInterval(() => {
+                const rows = document.querySelectorAll('div#listTramPP table tbody tr');
+                const isLoaded = rows.length > 1 || (rows.length === 1 && !rows[0].innerText.includes("tải") && !rows[0].innerText.includes("Chưa có"));
+                if (isLoaded || Date.now() - start > 4000) {
+                    clearInterval(check);
+                    setTimeout(resolve, 600);
+                }
+            }, 300);
+        });
 
-            // Chờ dữ liệu xuất hiện
-            await new Promise(resolve => {
-                const start = Date.now();
-                const check = setInterval(() => {
-                    const rows = document.querySelectorAll('div#listTramPP table tbody tr');
-                    const firstRowText = rows[0]?.innerText || "";
-                    const isLoaded = (rows.length > 1) || 
-                                     (rows.length === 1 && !firstRowText.includes("Đang tải") && !firstRowText.includes("Chưa có"));
-
-                    if (isLoaded || Date.now() - start > 3000) {
-                        clearInterval(check);
-                        setTimeout(resolve, 800); 
-                    }
-                }, 400);
-            });
-
-            // Thu thập dữ liệu
-            scrapeTableData(nodeId);
-
-            // Thực thi hành động Xóa (nút bạn đã chọn) sau khi đã lưu xong dữ liệu
-            const deleteBtn = document.querySelector('button.btn.btn-outline-primary');
-            if (deleteBtn) deleteBtn.click();
-
-        }
+        scrapeTableData(nodeId);
+        const deleteBtn = document.querySelector('button.btn.btn-outline-primary');
+        if (deleteBtn) deleteBtn.click();
     };
 
     const downloadCSV = () => {
         if (allData.length <= 1) return;
         const csvContent = "\uFEFF" + allData.map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
         link.download = `Data_OMS_${Date.now()}.csv`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 
     (async () => {
         for (const id of idList) {
             await processNode(id);
-            await new Promise(r => setTimeout(r, 500)); 
+            await new Promise(r => setTimeout(r, 200)); 
         }
         downloadCSV();
-        console.log("Hoàn thành.");
     })();
 }
